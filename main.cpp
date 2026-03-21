@@ -23,7 +23,7 @@ void mostrarMenu() {
     cout << "9. Mostrar estado general del juego" << endl;
     cout << "10. Salir" << endl;
     cout << "========================================" << endl;
-    cout << "Opción: ";
+    cout << "Opcion: ";
 }
 
 int main() {
@@ -72,12 +72,12 @@ int main() {
                 salir = true;
                 break;
             default:
-                cout << "Opción inválida. Intente nuevamente." << endl;
+                cout << "Opcion invalida. Intente nuevamente." << endl;
                 limpiarBuffer();
         }
         
         if(juego.isJuegoTerminado()) {
-            cout << "\nEl juego ha terminado. Presiona Enter para salir..." << endl;
+            cout << "\nEl juego ha terminado. Presiona Enter para salir" << endl;
             cin.ignore();
             cin.get();
             break;
