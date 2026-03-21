@@ -2,6 +2,7 @@
 #define JUEGO_HPP
 
 #include "ListaSecuencial.hpp"
+#include <vector>    // Línea 5
 #include "ListaDobleEnlazada.hpp"
 #include "ListaCircular.hpp"
 #include <iostream>
@@ -172,7 +173,7 @@ public:
             juegoTerminado = true;
             cout << "\n!!! VICTORIA !!! Has completado todas las oleadas!" << endl;
         } else {
-            mostrarEstado();
+            mostrarEstadoGeneral();
         }
         
         oleadaActual++;
@@ -232,7 +233,7 @@ public:
         for(int id : idsLlegaron) {
             enemigosActivos.eliminar(id);
             vidas--;
-            cout << "Enemigo " << id << " llegó al final! Pierdes 1 vida. Vidas restantes: " << vidas << endl;
+            cout << "Enemigo " << id << " llego al final! Pierdes 1 vida. Vidas restantes: " << vidas << endl;
         }
         
         if(!idsLlegaron.empty()) {
@@ -253,7 +254,7 @@ public:
     void mostrarEstadoGeneral() {
         cout << "\n=== ESTADO GENERAL DEL JUEGO ===" << endl;
         cout << "Vidas restantes: " << vidas << endl;
-        cout << "Puntuación total: " << puntuacion << endl;
+        cout << "Puntuacion total: " << puntuacion << endl;
         cout << "Torres activas: " << torres.contarActivas() << " de " << torres.getCantidad() << endl;
         cout << "Enemigos activos: " << enemigosActivos.getCantidad() << endl;
         cout << "Estado: " << (juegoTerminado ? "TERMINADO" : "EN CURSO") << endl;
@@ -261,7 +262,7 @@ public:
         if(!juegoTerminado) {
             Oleada* oleada = oleadas.getOleadaActual();
             if(oleada != nullptr) {
-                cout << "Próxima oleada: " << oleada->idOleada << " (" 
+                cout << "Proxima oleada: " << oleada->idOleada << " (" 
                      << oleada->cantidadEnemigos << " enemigos)" << endl;
             } else {
                 cout << "Todas las oleadas completadas!" << endl;

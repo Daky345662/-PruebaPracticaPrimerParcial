@@ -1,3 +1,4 @@
+#include <iostream> 
 #ifndef LISTA_SECUENCIAL_HPP
 #define LISTA_SECUENCIAL_HPP
 
@@ -17,7 +18,7 @@ public:
     
     bool insertar(Torre torre) {
         if(cantidad >= MAX_TORRES) {
-            cout << "Error: No se pueden agregar más torres" << endl;
+            cout << "Error: No se pueden agregar mas torres" << endl;
             return false;
         }
         torres[cantidad] = torre;
