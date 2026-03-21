@@ -1,152 +1,275 @@
-
-    #ifndef JUEGO_HPP
+#ifndef JUEGO_HPP
 #define JUEGO_HPP
 
-#include <iostream>
-#include <cmath> // Para usar abs() y calcular distancias
 #include "ListaSecuencial.hpp"
 #include "ListaDobleEnlazada.hpp"
 #include "ListaCircular.hpp"
-
+#include <iostream>
+#include <cstdlib>
 using namespace std;
+
+const int LONGITUD_CAMINO = 20;
+const int VIDAS_INICIALES = 3;
 
 class Juego {
 private:
-    // --- ATRIBUTOS PRIVADOS (Encapsulamiento) ---
-    ListaSecuencial torres;      // Maneja el arreglo de estructuras defensivas
-    ListaDobleEnlazada enemigos; // Maneja los enemigos activos (nodos dobles)
-    ListaCircular oleadas;       // Maneja el ciclo infinito de oleadas
+    ListaSecuencial torres;
+    ListaDobleEnlazada enemigosActivos;
+    ListaCircular oleadas;
+    int vidas;
+    int puntuacion;
+    int oleadaActual;
+    int contadorEnemigos;
+    bool juegoTerminado;
     
-    int vidas;                   // Salud del jugador (inicia en 3)
-    int turnoActual;             // Contador de turnos transcurridos
-    const int LIMITE_RUTA = 20;  // Longitud máxima del camino (0 a 20)
-
 public:
-    // Constructor: Define el estado inicial de la partida
-    Juego() {
-        vidas = 3;
-        turnoActual = 0;
-    }
-
-    // Método que gestiona la interacción con el usuario
-    void iniciarMenu() {
-        int opcion;
-        do {
-            cout << "\n=== TOWER DEFENSE - MENU PRINCIPAL ===\n";
-            cout << "Vidas: " << vidas << " | Turno: " << turnoActual << "\n";
-            cout << "1. Registrar torre defensiva\n";
-            cout << "2. Mostrar torres registradas\n";
-            cout << "3. Eliminar torre\n";
-            cout << "4. Registrar oleada\n";
-            cout << "5. Mostrar oleadas\n";
-            cout << "6. Iniciar siguiente oleada\n";
-            cout << "7. Avanzar turno\n";
-            cout << "8. Mostrar enemigos activos\n";
-            cout << "9. Mostrar estado general del juego\n";
-            cout << "10. Salir\n";
-            cout << "Seleccione una opcion: ";
-            cin >> opcion;
-
-            switch(opcion) {
-                case 1: {
-                    // Captura de datos para crear una nueva torre
-                    Torre t;
-                    cout << "ID: "; cin >> t.id;
-                    cout << "Nombre: "; cin >> t.nombre;
-                    cout << "Tipo: "; cin >> t.tipo;
-                    cout << "Posicion (0-20): "; cin >> t.posicion;
-                    cout << "Danio: "; cin >> t.danio;
-                    cout << "Rango: "; cin >> t.rango;
-                    cout << "Costo: "; cin >> t.costo;
-                    // Se envía la estructura a la lista secuencial
-                    torres.insertarTorre(t); 
-                    break;
-                }
-                case 2: 
-                    torres.mostrarTorres(); 
-                    break;
-                case 3: 
-                    int idEliminar;
-                    cout << "ID de torre a eliminar: "; cin >> idEliminar;
-                    torres.eliminarTorrePorId(idEliminar);
-                    break;
-                case 4: {
-                    // Captura de datos para una nueva oleada
-                    Oleada o;
-                    cout << "ID Oleada: "; cin >> o.idOleada;
-                    cout << "Cantidad enemigos: "; cin >> o.cantidadEnemigos;
-                    // Se envía a la lista circular
-                    oleadas.registrarOleada(o); 
-                    break;
-                }
-                case 5: 
-                    oleadas.mostrarOleadas(); 
-                    break;
-                case 6: 
-                    // Cambia el puntero de la oleada actual a la siguiente en el círculo
-                    oleadas.avanzarSiguienteOleada(); 
-                    break;
-                case 7: 
-                    // Ejecuta la lógica de combate y movimiento
-                    avanzarTurno(); 
-                    break;
-                case 8: 
-                    // Recorre la lista doblemente enlazada de enemigos
-                    enemigos.mostrarAdelante(); 
-                    break;
-                case 9: 
-                    cout << "=== ESTADO DEL JUGADOR ===\n";
-                    cout << "Vidas restantes: " << vidas << "\n";
-                    cout << "Turnos completados: " << turnoActual << "\n";
-                    cout << "Torres activas: " << torres.contarTorres() << "\n";
-                    break;
-                case 10: 
-                    cout << "Saliendo del juego...\n"; 
-                    break;
-                default: 
-                    cout << "Opcion no valida. Intente de nuevo.\n";
-            }
-        } while(opcion != 10 && vidas > 0);
-
-        // Mensaje de derrota si las vidas llegan a cero
-        if (vidas <= 0) cout << "\n¡GAME OVER! Los enemigos han conquistado tu base.\n";
-    }
-
-    // --- LÓGICA DEL MOTOR DE JUEGO (Turnos) ---
-    void avanzarTurno() {
-        if (vidas <= 0) return;
-
-        turnoActual++;
-        cout << "\n--- PROCESANDO TURNO " << turnoActual << " ---\n";
+    Juego() : vidas(VIDAS_INICIALES), puntuacion(0), oleadaActual(0), contadorEnemigos(1), juegoTerminado(false) {}
+    
+    // Registro de torres
+    void registrarTorre() {
+        Torre torre;
+        cout << "\n=== REGISTRAR TORRE ===" << endl;
+        cout << "ID: ";
+        cin >> torre.id;
         
-        // MOVIMIENTO:Cada enemigo avanza según su propia velocidad
-        // Delegamos esto a la lista doble de enemigos
-        enemigos.actualizarPosiciones();
+        if(torres.buscar(torre.id) != nullptr) {
+            cout << "Error: Ya existe una torre con ese ID" << endl;
+            return;
+        }
         
-        // ATAQUE: Recorremos todas las torres registradas en el arreglo (lista secuencial)
-        int numTorres = torres.contarTorres();
-        for (int i = 0; i < numTorres; i++) {
-            // Obtenemos un puntero a la torre actual
-            Torre* t = torres.obtenerTorrePorIndice(i);
-            
-            if (t != nullptr) {
-                // Informamos qué torre está disparando
-                cout << "Torre " << t->nombre << " atacando en rango " << t->rango << "...\n";
-                
-                // El Manager de enemigos busca qué nodos están cerca de la torre y les resta vida
-                enemigos.recibirAtaque(t->posicion, t->rango, t->danio);
+        cout << "Nombre: ";
+        cin.ignore();
+        getline(cin, torre.nombre);
+        cout << "Tipo: ";
+        getline(cin, torre.tipo);
+        cout << "Posición (0-" << LONGITUD_CAMINO << "): ";
+        cin >> torre.posicion;
+        cout << "Daño: ";
+        cin >> torre.danio;
+        cout << "Rango: ";
+        cin >> torre.rango;
+        cout << "Costo: ";
+        cin >> torre.costo;
+        
+        torre.activa = true;
+        
+        if(torres.insertar(torre)) {
+            cout << "Torre registrada exitosamente!" << endl;
+        }
+    }
+    
+    void mostrarTorres() {
+        torres.mostrar();
+    }
+    
+    void eliminarTorre() {
+        int id;
+        cout << "ID de la torre a eliminar: ";
+        cin >> id;
+        
+        if(torres.eliminar(id)) {
+            cout << "Torre eliminada exitosamente!" << endl;
+        } else {
+            cout << "No se encontró torre con ID " << id << endl;
+        }
+    }
+    
+    // Registro de oleadas
+    void registrarOleada() {
+        Oleada oleada;
+        cout << "\n=== REGISTRAR OLEADA ===" << endl;
+        cout << "ID de oleada: ";
+        cin >> oleada.idOleada;
+        cout << "Cantidad de enemigos: ";
+        cin >> oleada.cantidadEnemigos;
+        cout << "Tipo de enemigo: ";
+        cin.ignore();
+        getline(cin, oleada.tipoEnemigo);
+        cout << "Vida base: ";
+        cin >> oleada.vidaBase;
+        cout << "Velocidad base: ";
+        cin >> oleada.velocidadBase;
+        
+        oleadas.insertar(oleada);
+        cout << "Oleada registrada exitosamente!" << endl;
+    }
+    
+    void mostrarOleadas() {
+        oleadas.mostrar();
+    }
+    
+    // Iniciar siguiente oleada
+    void iniciarSiguienteOleada() {
+        if(juegoTerminado) {
+            cout << "El juego ya terminó. Reinicia el juego para comenzar de nuevo." << endl;
+            return;
+        }
+        
+        if(!enemigosActivos.estaVacio()) {
+            cout << "Primero debes eliminar a los enemigos activos antes de iniciar una nueva oleada." << endl;
+            return;
+        }
+        
+        Oleada* oleada = oleadas.getOleadaActual();
+        if(oleada == nullptr) {
+            if(oleadas.getCantidad() > 0) {
+                oleadas.reiniciar();
+                oleada = oleadas.getOleadaActual();
+            } else {
+                cout << "No hay oleadas registradas. Registra al menos una oleada." << endl;
+                return;
             }
         }
-
-        // VALIDACIÓN DE DAÑO A LA BASE:
-        // Si algún enemigo superó la posición 20, se descuentan vidas del jugador
-        enemigos.verificarLlegadaAlFinal(LIMITE_RUTA, vidas);
         
-        // LIMPIEZA: Eliminamos de la lista doble a los enemigos con vida <= 0
-        enemigos.eliminarMuertos();
+        cout << "\n=== INICIANDO OLEADA " << oleada->idOleada << " ===" << endl;
         
-        cout << "Turno " << turnoActual << " completado con exito.\n";
+        for(int i = 0; i < oleada->cantidadEnemigos; i++) {
+            Enemigo enemigo(
+                contadorEnemigos++,
+                oleada->tipoEnemigo,
+                oleada->vidaBase,
+                oleada->velocidadBase,
+                0, // posición inicial
+                10 // recompensa base
+            );
+            enemigosActivos.insertarFinal(enemigo);
+        }
+        
+        cout << "Se han generado " << oleada->cantidadEnemigos << " enemigos!" << endl;
+        
+        // Avanzar a la siguiente oleada
+        oleadas.avanzar();
     }
+    
+    // Avanzar turno
+    void avanzarTurno() {
+        if(juegoTerminado) {
+            cout << "El juego ha terminado. Reinicia el programa para jugar de nuevo." << endl;
+            return;
+        }
+        
+        if(enemigosActivos.estaVacio()) {
+            cout << "No hay enemigos activos. Inicia una oleada primero." << endl;
+            return;
+        }
+        
+        cout << "\n=== TURNO " << (oleadaActual + 1) << " ===" << endl;
+        
+        // 1. Mover enemigos
+        enemigosActivos.moverTodos();
+        
+        // 2. Torres atacan
+        atacarEnemigos();
+        
+        // 3. Verificar enemigos destruidos y llegar al final
+        verificarEnemigos();
+        
+        // 4. Verificar fin del juego
+        if(vidas <= 0) {
+            juegoTerminado = true;
+            cout << "\n!!! GAME OVER !!! Has perdido todas tus vidas." << endl;
+        } else if(enemigosActivos.estaVacio() && !hayMasOleadas()) {
+            juegoTerminado = true;
+            cout << "\n!!! VICTORIA !!! Has completado todas las oleadas!" << endl;
+        } else {
+            mostrarEstado();
+        }
+        
+        oleadaActual++;
+    }
+    
+    void atacarEnemigos() {
+        cout << "\n--- ATAQUES DE TORRES ---" << endl;
+        
+        for(int i = 0; i < torres.getCantidad(); i++) {
+            Torre* torre = &(torres.getTorres()[i]);
+            if(!torre->activa) continue;
+            
+            NodoEnemigo* nodo = enemigosActivos.getPrimero();
+            bool ataco = false;
+            
+            while(nodo != nullptr) {
+                int distancia = abs(nodo->enemigo.posicion - torre->posicion);
+                
+                if(distancia <= torre->rango) {
+                    cout << "Torre '" << torre->nombre << "' ataca a enemigo " 
+                         << nodo->enemigo.id << " causando " << torre->danio << " de daño!" << endl;
+                    nodo->enemigo.recibirDanio(torre->danio);
+                    ataco = true;
+                }
+                nodo = nodo->siguiente;
+            }
+            
+            if(!ataco) {
+                cout << "Torre '" << torre->nombre << "' no tiene enemigos en su rango." << endl;
+            }
+        }
+    }
+    
+    void verificarEnemigos() {
+        NodoEnemigo* nodo = enemigosActivos.getPrimero();
+        vector<int> idsEliminar;
+        vector<int> idsLlegaron;
+        
+        while(nodo != nullptr) {
+            if(!nodo->enemigo.estaVivo()) {
+                idsEliminar.push_back(nodo->enemigo.id);
+                puntuacion += nodo->enemigo.recompensa;
+                cout << "Enemigo " << nodo->enemigo.id << " eliminado! +" 
+                     << nodo->enemigo.recompensa << " puntos." << endl;
+            } else if(nodo->enemigo.posicion >= LONGITUD_CAMINO) {
+                idsLlegaron.push_back(nodo->enemigo.id);
+            }
+            nodo = nodo->siguiente;
+        }
+        
+        // Eliminar enemigos muertos
+        for(int id : idsEliminar) {
+            enemigosActivos.eliminar(id);
+        }
+        
+        // Descontar vidas por enemigos que llegaron al final
+        for(int id : idsLlegaron) {
+            enemigosActivos.eliminar(id);
+            vidas--;
+            cout << "Enemigo " << id << " llegó al final! Pierdes 1 vida. Vidas restantes: " << vidas << endl;
+        }
+        
+        if(!idsLlegaron.empty()) {
+            cout << "Total de vidas perdidas: " << idsLlegaron.size() << endl;
+        }
+    }
+    
+    bool hayMasOleadas() {
+        // Verificar si hay más oleadas (si el actual no es el último)
+        // Esto es simplificado - en una implementación real se necesitaría más lógica
+        return oleadas.getCantidad() > 0;
+    }
+    
+    void mostrarEnemigosActivos() {
+        enemigosActivos.recorrerAdelante();
+    }
+    
+    void mostrarEstadoGeneral() {
+        cout << "\n=== ESTADO GENERAL DEL JUEGO ===" << endl;
+        cout << "Vidas restantes: " << vidas << endl;
+        cout << "Puntuación total: " << puntuacion << endl;
+        cout << "Torres activas: " << torres.contarActivas() << " de " << torres.getCantidad() << endl;
+        cout << "Enemigos activos: " << enemigosActivos.getCantidad() << endl;
+        cout << "Estado: " << (juegoTerminado ? "TERMINADO" : "EN CURSO") << endl;
+        
+        if(!juegoTerminado) {
+            Oleada* oleada = oleadas.getOleadaActual();
+            if(oleada != nullptr) {
+                cout << "Próxima oleada: " << oleada->idOleada << " (" 
+                     << oleada->cantidadEnemigos << " enemigos)" << endl;
+            } else {
+                cout << "Todas las oleadas completadas!" << endl;
+            }
+        }
+    }
+    
+    bool isJuegoTerminado() { return juegoTerminado; }
 };
 
 #endif
